@@ -1,0 +1,12 @@
+Security Flow:
+ Registration -> Password Encryption -> User Saved -> JWT Token Generated
+ Login -> Authentication -> JWT Validation -> Protected Access
+
+Authorization Levels:
+Public: /api/auth/**, /api/menu/**
+Authenticated: /api/orders/my-orders, /api/orders (own orders)
+Admin Only: /api/orders/user/**
+
+
+
+
