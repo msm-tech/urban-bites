@@ -1,6 +1,6 @@
 import AuthService from './authService';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
 class ApiService {
   // Generic API call with authentication
@@ -56,21 +56,21 @@ class ApiService {
     });
   }
 
-static async getMyOrders() {
-  // Use the new my-orders endpoint that uses authentication
-  return this.callApi('/orders/my-orders');
-}
+  static async getMyOrders() {
+    // Use the new my-orders endpoint that uses authentication
+    return this.callApi('/orders/my-orders');
+  }
 
-/*  static async getMyOrders() {
-    // Get current user from token to fetch their orders
-    const currentUser = AuthService.getCurrentUser();
-    if (!currentUser || !currentUser.email) {
-      throw new Error('User not authenticated');
-    }
+  /*  static async getMyOrders() {
+      // Get current user from token to fetch their orders
+      const currentUser = AuthService.getCurrentUser();
+      if (!currentUser || !currentUser.email) {
+        throw new Error('User not authenticated');
+      }
 
-    // Use the email endpoint from your backend
-    return this.callApi(`/orders/user/email/${currentUser.email}`);
-  }*/
+      // Use the email endpoint from your backend
+      return this.callApi(`/orders/user/email/${currentUser.email}`);
+    }*/
 
   static async getAllOrders() {
     return this.callApi('/orders');

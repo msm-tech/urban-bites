@@ -20,7 +20,7 @@ const Orders = () => {
       setLoading(true);
       setError('');
       const userOrders = await ApiService.getMyOrders();
-      console.log('Raw orders data:', userOrders); // Debug log
+      if (process.env.NODE_ENV !== 'production') console.log('Raw orders data:', userOrders); // Debug log
       setOrders(userOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);

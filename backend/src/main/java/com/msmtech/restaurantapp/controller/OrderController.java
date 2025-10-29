@@ -5,6 +5,8 @@ import com.msmtech.restaurantapp.entity.Order;
 import com.msmtech.restaurantapp.entity.User;
 import com.msmtech.restaurantapp.repository.OrderRepository;
 import com.msmtech.restaurantapp.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/orders")
 public class OrderController {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -32,9 +36,9 @@ public class OrderController {
     public ResponseEntity<?> createOrder(@RequestBody Order order,
                                          @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            System.out.println("=== DEBUG ORDER CREATION ===");
-            System.out.println("Raw order createdAt: " + order.getCreatedAt());
-            System.out.println("Is createdAt null? " + (order.getCreatedAt() == null));
+            logger.debug("DEBUG ORDER CREATION");
+            logger.debug("Raw order createdAt: {}", order.getCreatedAt());
+            logger.debug("Is createdAt null? {}", (order.getCreatedAt() == null));
 
             // Rest of your code...
             if (userDetails != null) {
@@ -44,9 +48,9 @@ public class OrderController {
                 if (userOptional.isPresent()) {
                     User user = userOptional.get();
                     order.setUser(user);
-                    System.out.println("✅ Associated order with user: " + user.getEmail() + " (ID: " + user.getId() + ")");
+                    logger.info("Associated order with user: {} (ID: {})", user.getEmail(), user.getId());
                 } else {
-                    System.out.println("⚠️ User not found for email: " + userEmail);
+                    logger.warn("User not found for email: {}", userEmail);
                 }
             }
 
@@ -56,18 +60,15 @@ public class OrderController {
             }
 
             Order savedOrder = orderRepository.save(order);
-            System.out.println("✅ Order created successfully: " + savedOrder.getId());
-            System.out.println("✅ Final createdAt: " + savedOrder.getCreatedAt());
+            logger.info("Order created successfully: {}", savedOrder.getId());
+            logger.debug("Final createdAt: {}", savedOrder.getCreatedAt());
 
             OrderResponse response = new OrderResponse(savedOrder);
-            System.out.println("=== FRONTEND RESPONSE DEBUG ===");
-            System.out.println("Response createdAt: " + response.getCreatedAt());
-            System.out.println("Raw entity createdAt: " + savedOrder.getCreatedAt());
+            logger.debug("FRONTEND RESPONSE DEBUG - createdAt: {} / raw: {}", response.getCreatedAt(), savedOrder.getCreatedAt());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e) {
-            System.out.println("❌ Error creating order: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error creating order: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating order: " + e.getMessage());
         }
@@ -76,7 +77,7 @@ public class OrderController {
     // GET /api/orders - Get all orders (for admin, or remove if not needed)
     @GetMapping
     public ResponseEntity<?> getAllOrders(@AuthenticationPrincipal UserDetails userDetails) {
-        System.out.println("📋 Fetching all orders for user: " +
+        logger.info("Fetching all orders for user: {}",
                 (userDetails != null ? userDetails.getUsername() : "unknown"));
 
         // For now, return all orders. You might want to restrict this to admin users
@@ -94,7 +95,7 @@ public class OrderController {
         }
 
         String userEmail = userDetails.getUsername();
-        System.out.println("🔍 Fetching orders for authenticated user: " + userEmail);
+        logger.info("Fetching orders for authenticated user: {}", userEmail);
 
         try {
             // Get user ID first
@@ -104,20 +105,20 @@ public class OrderController {
             }
 
             Long userId = userOptional.get().getId();
-            System.out.println("👤 User ID: " + userId);
+            logger.debug("User ID: {}", userId);
 
             // Try multiple approaches to find orders
-            System.out.println("📊 Attempt 1: Finding orders by user ID: " + userId);
+            logger.debug("Attempt 1: Finding orders by user ID: {}", userId);
             List<Order> ordersByUserId = orderRepository.findByUserId(userId);
-            System.out.println("📦 Orders found by user ID: " + ordersByUserId.size());
+            logger.debug("Orders found by user ID: {}", ordersByUserId.size());
 
-            System.out.println("📊 Attempt 2: Finding orders by user email: " + userEmail);
+            logger.debug("Attempt 2: Finding orders by user email: {}", userEmail);
             List<Order> ordersByUserEmail = orderRepository.findByUserEmail(userEmail);
-            System.out.println("📦 Orders found by user email: " + ordersByUserEmail.size());
+            logger.debug("Orders found by user email: {}", ordersByUserEmail.size());
 
-            System.out.println("📊 Attempt 3: Finding orders by customer email: " + userEmail);
+            logger.debug("Attempt 3: Finding orders by customer email: {}", userEmail);
             List<Order> ordersByCustomerEmail = orderRepository.findByCustomerEmail(userEmail);
-            System.out.println("📦 Orders found by customer email: " + ordersByCustomerEmail.size());
+            logger.debug("Orders found by customer email: {}", ordersByCustomerEmail.size());
 
             // Combine all results
             List<Order> allUserOrders = new ArrayList<>();
@@ -133,14 +134,14 @@ public class OrderController {
                     .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
                     .collect(Collectors.toList());
 
-            System.out.println("✅ Final unique orders for user: " + uniqueOrders.size());
+            logger.info("Final unique orders for user: {}", uniqueOrders.size());
 
             List<OrderResponse> orderResponses = uniqueOrders.stream()
                     .map(order -> {
                         // Debug each order's date
-                        System.out.println("Order #" + order.getId() + " createdAt: " + order.getCreatedAt());
+                        logger.debug("Order #{} createdAt: {}", order.getId(), order.getCreatedAt());
                         OrderResponse response = new OrderResponse(order);
-                        System.out.println("Order #" + order.getId() + " response createdAt: " + response.getCreatedAt());
+                        logger.debug("Order #{} response createdAt: {}", order.getId(), response.getCreatedAt());
                         return response;
                     })
                     .collect(Collectors.toList());
@@ -148,8 +149,7 @@ public class OrderController {
             return ResponseEntity.ok(orderResponses);
 
         } catch (Exception e) {
-            System.out.println("❌ Error fetching user orders: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error fetching user orders: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching orders: " + e.getMessage());
         }
@@ -166,19 +166,18 @@ public class OrderController {
         // Optional: Check if the requested email matches the authenticated user's email
         // This prevents users from accessing other users' orders
         if (!userDetails.getUsername().equals(email)) {
-            System.out.println("🚫 Access denied: User " + userDetails.getUsername() +
-                    " tried to access orders for " + email);
+            logger.warn("Access denied: User {} tried to access orders for {}", userDetails.getUsername(), email);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
         }
 
-        System.out.println("📧 Fetching orders for user email: " + email);
+        logger.info("Fetching orders for user email: {}", email);
         try {
             List<OrderResponse> orders = orderRepository.findByUserEmail(email).stream()
                     .map(OrderResponse::new)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
-            System.out.println("❌ Error fetching orders by email: " + e.getMessage());
+            logger.error("Error fetching orders by email: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching orders: " + e.getMessage());
         }
@@ -192,14 +191,14 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
-        System.out.println("📞 Fetching orders for user phone: " + phone);
+        logger.info("Fetching orders for user phone: {}", phone);
         try {
             List<OrderResponse> orders = orderRepository.findByUserPhone(phone).stream()
                     .map(OrderResponse::new)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
-            System.out.println("❌ Error fetching orders by phone: " + e.getMessage());
+            logger.error("Error fetching orders by phone: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching orders: " + e.getMessage());
         }
@@ -213,14 +212,14 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
-        System.out.println("👤 Fetching orders for user ID: " + userId);
+        logger.info("Fetching orders for user ID: {}", userId);
         try {
             List<OrderResponse> orders = orderRepository.findByUserId(userId).stream()
                     .map(OrderResponse::new)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
-            System.out.println("❌ Error fetching orders by user ID: " + e.getMessage());
+            logger.error("Error fetching orders by user ID: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching orders: " + e.getMessage());
         }
@@ -234,7 +233,7 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
-        System.out.println("🔍 Fetching order: " + id + " for user: " + userDetails.getUsername());
+        logger.info("Fetching order: {} for user: {}", id, userDetails.getUsername());
         Optional<Order> order = orderRepository.findById(id);
         return order.map(o -> ResponseEntity.ok(new OrderResponse(o)))
                 .orElse(ResponseEntity.notFound().build());
@@ -249,8 +248,7 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
-        System.out.println("🔄 Updating order " + id + " status to: " + newStatus +
-                " by user: " + userDetails.getUsername());
+        logger.info("Updating order {} status to: {} by user: {}", id, newStatus, userDetails.getUsername());
 
         Optional<Order> orderOptional = orderRepository.findById(id);
 
@@ -264,7 +262,7 @@ public class OrderController {
             Order updatedOrder = orderRepository.save(order);
             return ResponseEntity.ok(new OrderResponse(updatedOrder));
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Status update failed: " + e.getMessage());
+            logger.warn("Status update failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Invalid status: " + e.getMessage());
         }
     }

@@ -42,23 +42,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-const register = async (userData) => {
-  try {
-    setError(null);
-    setLoading(true);
+  const register = async (userData) => {
+    try {
+      setError(null);
+      setLoading(true);
 
-    // Just register, don't auto-login
-    const response = await AuthService.register(userData);
-    console.log('Registration successful!');
-    return response;
+      // Just register, don't auto-login
+      const response = await AuthService.register(userData);
+      if (process.env.NODE_ENV !== 'production') console.log('Registration successful!');
+      return response;
 
-  } catch (error) {
-    setError(error.message || 'Registration failed');
-    throw error;
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (error) {
+      setError(error.message || 'Registration failed');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const logout = () => {

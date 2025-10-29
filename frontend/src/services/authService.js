@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+const DEBUG = process.env.NODE_ENV !== 'production';
 
 class AuthService {
   // Store token in localStorage
@@ -30,7 +31,7 @@ class AuthService {
   // Register new user
 static async register(userData) {
   try {
-    console.log('Sending registration data:', userData);
+    if (DEBUG) console.log('Sending registration data:', userData);
 
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
@@ -60,7 +61,7 @@ static async register(userData) {
       throw new Error(errorMessage);
     }
 
-    console.log('Registration successful:', responseData);
+    if (DEBUG) console.log('Registration successful:', responseData);
     return responseData;
 
   } catch (error) {
@@ -72,7 +73,7 @@ static async register(userData) {
   // Login user
   static async login(credentials) {
     try {
-      console.log('Sending login credentials:', credentials);
+      if (DEBUG) console.log('Sending login credentials:', credentials);
 
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -94,7 +95,7 @@ static async register(userData) {
       // Store the token
       if (responseData.token) {
         this.setToken(responseData.token);
-        console.log('Token stored successfully');
+        if (DEBUG) console.log('Token stored successfully');
       }
 
       return responseData;
@@ -120,7 +121,7 @@ static async register(userData) {
     try {
       // Simple JWT decoding (for frontend display only)
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('JWT Payload:', payload); // Debug log
+      if (DEBUG) console.log('JWT Payload:', payload); // Debug log
 
       // Handle different possible field names in JWT
       return {
